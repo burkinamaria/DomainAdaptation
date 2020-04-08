@@ -20,14 +20,10 @@ class Trainer:
         src_images, src_classes = src_batch
         trg_images, trg_classes = trg_batch
         batch = dict()
-        # batch['src_images'] = src_images
-        # batch['trg_images'] = trg_images
-        # batch['src_classes'] = src_classes
-        # batch['trg_classes'] = trg_classes
-
-        batch['images'] = torch.cat([src_images, trg_images], dim=0)
-        batch['true_classes'] = torch.cat([src_classes, trg_classes], dim=0)
-        batch['domains'] = torch.cat([torch.zeros(len(src_classes)), torch.ones(len(src_classes))], dim=0)
+        batch['src_images'] = src_images
+        batch['trg_images'] = trg_images
+        batch['src_classes'] = src_classes
+        batch['trg_classes'] = trg_classes
         return batch
 
     def fit(self, src_data, trg_data, n_epochs=1000, steps_per_epoch=100, val_freq=1,
@@ -56,15 +52,17 @@ class Trainer:
                     trg_metrics = self.score(trg_val_data, metrics)
 
     def score(self, data, metrics):
-        images, true_classes = data
-        pred_classes = self.predict(images)
-        return {metric.name: metric(pred_classes, true_classes) for metric in metrics}
+        for metric in metrics:
+            metric.reset()
 
-    def predict_on_batch(self, batch):
-        pass
+        for images, true_classes in data:
+            pred_classes = self.model.predict(images)
+            for metric in metrics:
+                metric(true_classes, pred_classes)
+        return {metric.name: metric.score for metric in metrics}
 
     def predict(self, data):
         predictions = []
         for batch in data:
-            predictions.append(self.predict_on_batch(batch))
-        return torch.stack(predictions)
+            predictions.append(self.model.predict(batch))
+        return torch.cat(predictions)
