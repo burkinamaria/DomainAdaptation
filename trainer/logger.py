@@ -22,4 +22,4 @@ class AvgLossLogger:
             self.history[name] = [0, 0]
         
     def get_info(self):
-        return {k: v[0]/v[1] for k, v in self.history.items()}
+        return {k: v[0]/v[1] for k, v in self.history.items() if v[1] != 0}
